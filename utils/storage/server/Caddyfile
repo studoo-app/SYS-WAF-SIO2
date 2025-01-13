@@ -1,0 +1,33 @@
+{
+    {$CADDY_GLOBAL_OPTIONS}
+    order coraza_waf first
+    frankenphp {
+        {$FRANKENPHP_CONFIG}
+    }
+}
+
+{$CADDY_EXTRA_CONFIG}
+
+{$SERVER_NAME:localhost} {
+    root * public/
+    encode zstd br gzip
+
+    coraza_waf {
+        load_owasp_crs
+        directives `
+        Include @coraza.conf-recommended
+        Include @crs-setup.conf.example
+        Include @owasp_crs/*.conf
+        SecRuleEngine On
+        `
+    }
+
+    handle_errors 403 {
+        header X-Blocked "true"
+        respond "Your request was blocked by the WAF 🏴‍☠️"
+    }
+
+    {$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+    php_server
+}
